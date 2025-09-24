@@ -120,16 +120,26 @@ const fetchSalesData = async (req, res) => {
 
         limit = limit ? Number(limit) : 10
         pageNo = pageNo ? Number(pageNo) - 1 : 0
+        sortBy = sortBy ? sortBy : "Country"
 
         const skipPages = pageNo * limit
 
-        const total = await Sales.countDocuments({ userId: req.userId })
-        const totalPages = Math.ceil(total / limit)
+        let total
+        let totalPages;
+
+        if (searchBy && search) {
+            total = await Sales.countDocuments({ userId: req.userId, [searchBy]: search })
+            totalPages = Math.ceil(total / limit)
+        }
+        else {
+            total = await Sales.countDocuments({ userId: req.userId })
+            totalPages = Math.ceil(total / limit)
+        }
 
         let data;
 
-        if (!searchBy && !search) {
-            data = await Sales.find({ userId: req.userId }).skip(skipPages).limit(limit).sort({ [sortBy]: -1 })
+        if (!searchBy || !search) {
+            data = await Sales.find({ userId: req.userId }).skip(skipPages).limit(limit).sort({ [sortBy]: 1 })
         }
         else {
             data = await Sales.find({ userId: req.userId, [searchBy]: search }).skip(skipPages).limit(limit).sort({ [sortBy]: -1 })
