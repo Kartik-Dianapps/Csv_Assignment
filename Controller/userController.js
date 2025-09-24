@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const dotenv = require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const Session = require("../Models/SessionModel.js");
+const { ObjectId } = require("mongodb")
 
 const registerUser = async (req, res) => {
     try {
@@ -50,7 +51,7 @@ const registerUser = async (req, res) => {
         return res.status(201).json({ user: { name: newUser.name, email: newUser.email }, message: "New User registered Successfully..." })
     }
     catch (error) {
-        console.log(error.message);
+        console.log(error);
         return res.status(500).json({ message: "Registration Failed..." })
     }
 }
@@ -94,10 +95,12 @@ const loginUser = async (req, res) => {
 
 const logoutUser = async (req, res) => {
     try {
-        const token = req.headers.authorization;
-        const userId = req.userId;
+        let token = req.headers.authorization;
+        token = token.substring(token.indexOf(" ") + 1);
 
-        await Session.deleteOne({ userId: userId, token: token })
+        const id = req.userId;
+
+        await Session.deleteOne({ userId: new ObjectId(id), token: token })
 
         return res.status(200).json({ message: "Logout Successfully..." })
 
