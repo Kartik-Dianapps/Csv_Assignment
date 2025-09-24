@@ -3,7 +3,8 @@ const bcrypt = require("bcrypt");
 const dotenv = require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const Session = require("../Models/SessionModel.js");
-const { ObjectId } = require("mongodb")
+const { ObjectId } = require("mongodb");
+const Sales = require("../Models/salesModel.js");
 
 const registerUser = async (req, res) => {
     try {
@@ -110,4 +111,35 @@ const logoutUser = async (req, res) => {
     }
 }
 
-module.exports = { registerUser, loginUser, logoutUser }
+const fetchSalesData = async (req, res) => {
+    try {
+
+        console.log("Inside the fetch fn");
+
+        let { limit, pageNo, sortBy, searchBy, search } = req.query;
+
+        limit = limit ? Number(limit) : 10
+        pageNo = pageNo ? Number(pageNo) - 1 : 0
+
+        const skipPages = pageNo * limit
+
+        const total = await Sales.countDocuments({ userId: req.userId })
+        const totalPages = Math.ceil(total / limit)
+
+        let data;
+
+        if (!searchBy && !search) {
+            data = await Sales.find({ userId: req.userId }).skip(skipPages).limit(limit).sort({ [sortBy]: -1 })
+        }
+        else {
+            data = await Sales.find({ userId: req.userId, [searchBy]: search }).skip(skipPages).limit(limit).sort({ [sortBy]: -1 })
+        }
+
+        return res.status(200).json({ data: data, totalPages: totalPages, currentPage: pageNo + 1, limit: limit, message: "Sales Data fetched successfully...." })
+    }
+    catch (error) {
+        console.log(error.message);
+    }
+}
+
+module.exports = { registerUser, loginUser, logoutUser, fetchSalesData }
