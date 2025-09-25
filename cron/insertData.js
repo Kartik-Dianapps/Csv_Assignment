@@ -49,15 +49,18 @@ async function processCsv(file, batchSize = 2000) {
 
         if (rows.length >= batchSize) {
             const batch = rows.splice(0, batchSize);
-            Sales.insertMany(batch, { ordered: false });
-            console.log("Inserted batch of", batch.length, "rows");
+            Sales.insertMany(batch, { ordered: false }).then(() => {
+                console.log("Inserted batch of", batch.length, "rows");
+            }).catch((err) => { console.log(err.message) })
+            set.clear()
         }
     });
 
     readable.on("end", async () => {
         if (rows.length > 0) {
-            Sales.insertMany(rows, { ordered: false });
-            console.log("Inserted final batch of", rows.length, "rows")
+            Sales.insertMany(rows, { ordered: false }).then(() => {
+                console.log("Inserted batch of", rows.length, "rows");
+            }).catch((err) => { console.log(err.message) })
         }
 
         await File.updateOne({ _id: file._id }, { status: "done" });
