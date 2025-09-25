@@ -2,47 +2,60 @@ const mongoose = require("mongoose");
 
 const salesSchema = new mongoose.Schema({
     Region: {
-        type: String
+        type: String,
+        required: true
     },
     Country: {
-        type: String
+        type: String,
+        required: true
     },
     ItemType: {
         type: String
     },
     SalesChannel: {
-        type: String
+        type: String,
+        required: true
     },
     OrderPriority: {
-        type: String
+        type: String,
+        required: true
     },
     OrderDate: {
-        type: Date
+        type: Date,
+        required: true
     },
     OrderId: {
         type: String,
-        unique: true
+        unique: true,
+        required: true
     },
     ShipDate: {
-        type: Date
+        type: Date,
+        required: true
     },
     UnitsSold: {
-        type: Number
+        type: Number,
+        required: true
     },
     UnitPrice: {
-        type: Number
+        type: Number,
+        required: true
     },
     UnitCost: {
-        type: Number
+        type: Number,
+        required: true
     },
     TotalRevenue: {
-        type: Number
+        type: Number,
+        required: true
     },
     TotalCost: {
-        type: Number
+        type: Number,
+        required: true
     },
     TotalProfit: {
-        type: Number
+        type: Number,
+        required: true
     },
     userId: {
         type: mongoose.Schema.Types.ObjectId,

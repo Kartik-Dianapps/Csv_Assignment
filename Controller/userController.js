@@ -114,9 +114,7 @@ const logoutUser = async (req, res) => {
 const fetchSalesData = async (req, res) => {
     try {
 
-        console.log("Inside the fetch fn");
-
-        let { limit, pageNo, sortBy, searchBy, search } = req.query;
+        let { limit, pageNo, sortBy, sortOrder, search } = req.query;
 
         limit = limit ? Number(limit) : 10
         pageNo = pageNo ? Number(pageNo) - 1 : 0
@@ -124,32 +122,124 @@ const fetchSalesData = async (req, res) => {
 
         const skipPages = pageNo * limit
 
+        const sortOptions = ["Region", "Country", "ItemType", "OrderId"];
+        const sortOrders = [1, -1];
+        sortOrder = Number(sortOrder)
+
+        if (!sortOptions.includes(sortBy)) {
+            return res.status(400).json({ message: "Cannot sortBy other than Region, Country, ItemType, OrderId" })
+        }
+
+        if (!sortOrders.includes(sortOrder)) {
+            return res.status(400).json({ message: "Cannot provide sort order other than 1 and -1" })
+        }
+
         let total
         let totalPages;
+        let data;
 
-        if (searchBy && search) {
-            total = await Sales.countDocuments({ userId: req.userId, [searchBy]: search })
+        if (search) {
+            total = await Sales.countDocuments({ userId: req.userId, $or: [{ Region: { $regex: search, $options: "i" } }, { Country: { $regex: search, $options: "i" } }, { ItemType: { $regex: search, $options: "i" } }] })
             totalPages = Math.ceil(total / limit)
+            data = await Sales.find({ userId: req.userId, $or: [{ Region: { $regex: search, $options: "i" } }, { Country: { $regex: search, $options: "i" } }, { ItemType: { $regex: search, $options: "i" } }] }).skip(skipPages).limit(limit).sort({ [sortBy]: sortOrder })
         }
         else {
             total = await Sales.countDocuments({ userId: req.userId })
             totalPages = Math.ceil(total / limit)
+            data = await Sales.find({ userId: req.userId }).skip(skipPages).limit(limit).sort({ [sortBy]: sortOrder })
         }
 
-        let data;
-
-        if (!searchBy || !search) {
-            data = await Sales.find({ userId: req.userId }).skip(skipPages).limit(limit).sort({ [sortBy]: 1 })
-        }
-        else {
-            data = await Sales.find({ userId: req.userId, [searchBy]: search }).skip(skipPages).limit(limit).sort({ [sortBy]: -1 })
-        }
-
-        return res.status(200).json({ data: data, totalPages: totalPages, currentPage: pageNo + 1, limit: limit, message: "Sales Data fetched successfully...." })
+        return res.status(200).json({ data: data, paginationDetails: { totalRecords: total, totalPages: totalPages, currentPage: pageNo + 1, limit: limit }, message: `Sales Data fetched successfully....` })
     }
     catch (error) {
         console.log(error.message);
+        return res.status(500).json({ message: "Error occurred while fetching..." })
     }
 }
 
-module.exports = { registerUser, loginUser, logoutUser, fetchSalesData }
+const updateSalesData = async (req, res) => {
+    try {
+        const id = req.params.id;
+
+        const data = req.body
+
+        const record = await Sales.findOne({ _id: id })
+
+        if (!record) {
+            return res.status(400).json({ message: "Please provide valid id..." })
+        }
+
+        let { Region, Country, ItemType, SalesChannel, OrderPriority, OrderDate, OrderId, ShipDate, UnitsSold, UnitPrice, UnitCost, TotalRevenue, TotalCost, TotalProfit } = data
+
+        Region = Region ? Region.trim() : record.Region
+        Country = Country ? Country.trim() : record.Country
+        ItemType = ItemType ? ItemType.trim() : record.ItemType
+        SalesChannel = SalesChannel ? SalesChannel.trim() : record.SalesChannel
+        OrderPriority = OrderPriority ? OrderPriority.trim() : record.OrderPriority
+        OrderDate = OrderDate ? new Date(OrderDate.trim()) : record.OrderDate
+        OrderId = OrderId ? OrderId.trim() : record.OrderId
+        ShipDate = ShipDate ? new Date(ShipDate.trim()) : record.ShipDate
+        UnitsSold = UnitsSold ? UnitsSold : record.UnitsSold
+        UnitPrice = UnitPrice ? UnitPrice : record.UnitPrice
+        UnitCost = UnitCost ? UnitCost : record.UnitCost
+        TotalRevenue = TotalRevenue ? TotalRevenue : record.TotalRevenue
+        TotalCost = TotalCost ? TotalCost : record.TotalCost
+        TotalProfit = TotalProfit ? TotalProfit : record.TotalProfit
+
+        // Check for order id
+        const orderIdExists = await Sales.findOne({ OrderId: OrderId })
+
+        if (orderIdExists) {
+            return res.status(400).json({ message: `Cannot update OrderId to this ${OrderId} as it is already exists...` })
+        }
+
+        const updated = await Sales.updateOne({ _id: id }, { $set: { Region, Country, ItemType, SalesChannel, OrderPriority, OrderDate, OrderId, ShipDate, UnitsSold, UnitPrice, UnitCost, TotalRevenue, TotalCost, TotalProfit } })
+
+        if (updated.modifiedCount === 0) {
+            return res.status(200).json({ message: "Nothing updated..." })
+        }
+
+        const updatedData = await Sales.findOne({ _id: id })
+
+        return res.status(200).json({ updatedData: updatedData, message: "Sales record Updated Successfully..." })
+    }
+    catch (error) {
+        console.log(error.message);
+        return res.status(500).json({ message: "Error Occurred while updating..." })
+    }
+}
+
+const deleteSalesData = async (req, res) => {
+    try {
+        const id = req.params.id;
+
+        const record = await Sales.findById(id)
+
+        if (!record) {
+            return res.status(400).json({ message: "Please Provide valid id..." })
+        }
+
+        await Sales.deleteOne({ _id: id })
+
+        return res.status(200).json({ deletedData: record, message: "Sales record deleted successfully..." })
+    }
+    catch (error) {
+        console.log(error.message)
+        return res.status(500).json({ message: "Error Occurred while deleting..." })
+    }
+}
+
+const insertSalesData = async (req, res) => {
+    try {
+        console.log("Inside insert");
+
+        const data = req.body;
+
+        await Sales.create(data)
+    }
+    catch (error) {
+
+    }
+}
+
+module.exports = { registerUser, loginUser, logoutUser, fetchSalesData, updateSalesData, deleteSalesData, insertSalesData }
