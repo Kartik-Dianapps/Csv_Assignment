@@ -3,22 +3,28 @@ const mongoose = require("mongoose");
 const salesSchema = new mongoose.Schema({
     Region: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     Country: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     ItemType: {
-        type: String
+        type: String,
+        required: true,
+        trim: true
     },
     SalesChannel: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     OrderPriority: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     OrderDate: {
         type: Date,
@@ -27,7 +33,8 @@ const salesSchema = new mongoose.Schema({
     OrderId: {
         type: String,
         unique: true,
-        required: true
+        required: true,
+        trim:true
     },
     ShipDate: {
         type: Date,

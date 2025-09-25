@@ -171,26 +171,33 @@ const updateSalesData = async (req, res) => {
 
         let { Region, Country, ItemType, SalesChannel, OrderPriority, OrderDate, OrderId, ShipDate, UnitsSold, UnitPrice, UnitCost, TotalRevenue, TotalCost, TotalProfit } = data
 
+        let orderIdExists;
+
+        if (OrderId && OrderId.trim() !== "" && OrderId.trim() !== record.OrderId) {
+            orderIdExists = await Sales.findOne({ _id: { $ne: id }, OrderId: OrderId.trim() })
+
+            if (orderIdExists) {
+                return res.status(400).json({ message: "Order Id already exists..." })
+            }
+        }
+
         Region = Region ? Region.trim() : record.Region
         Country = Country ? Country.trim() : record.Country
         ItemType = ItemType ? ItemType.trim() : record.ItemType
         SalesChannel = SalesChannel ? SalesChannel.trim() : record.SalesChannel
         OrderPriority = OrderPriority ? OrderPriority.trim() : record.OrderPriority
-        OrderDate = OrderDate ? new Date(OrderDate.trim()) : record.OrderDate
+        OrderDate = OrderDate ? OrderDate.trim() : record.OrderDate
         OrderId = OrderId ? OrderId.trim() : record.OrderId
-        ShipDate = ShipDate ? new Date(ShipDate.trim()) : record.ShipDate
-        UnitsSold = UnitsSold ? UnitsSold : record.UnitsSold
+        ShipDate = ShipDate ? ShipDate.trim() : record.ShipDate
+        UnitsSold = (UnitsSold || UnitsSold === 0) ? UnitsSold : record.UnitsSold
         UnitPrice = UnitPrice ? UnitPrice : record.UnitPrice
         UnitCost = UnitCost ? UnitCost : record.UnitCost
         TotalRevenue = TotalRevenue ? TotalRevenue : record.TotalRevenue
         TotalCost = TotalCost ? TotalCost : record.TotalCost
         TotalProfit = TotalProfit ? TotalProfit : record.TotalProfit
 
-        // Check for order id
-        const orderIdExists = await Sales.findOne({ OrderId: OrderId })
-
-        if (orderIdExists) {
-            return res.status(400).json({ message: `Cannot update OrderId to this ${OrderId} as it is already exists...` })
+        if (!Region || !Country || !ItemType || !SalesChannel || !OrderPriority || !OrderDate || !OrderId || !ShipDate) {
+            return res.status(400).json({ message: "Any field cannot be empty string if you want to update..." })
         }
 
         const updated = await Sales.updateOne({ _id: id }, { $set: { Region, Country, ItemType, SalesChannel, OrderPriority, OrderDate, OrderId, ShipDate, UnitsSold, UnitPrice, UnitCost, TotalRevenue, TotalCost, TotalProfit } })
@@ -204,7 +211,7 @@ const updateSalesData = async (req, res) => {
         return res.status(200).json({ updatedData: updatedData, message: "Sales record Updated Successfully..." })
     }
     catch (error) {
-        console.log(error.message);
+        console.log(error);
         return res.status(500).json({ message: "Error Occurred while updating..." })
     }
 }
@@ -216,7 +223,7 @@ const deleteSalesData = async (req, res) => {
         const record = await Sales.findById(id)
 
         if (!record) {
-            return res.status(400).json({ message: "Please Provide valid id..." })
+            return res.status(400).json({ message: "Record Not Found..." })
         }
 
         await Sales.deleteOne({ _id: id })
@@ -231,14 +238,75 @@ const deleteSalesData = async (req, res) => {
 
 const insertSalesData = async (req, res) => {
     try {
-        console.log("Inside insert");
-
         const data = req.body;
 
-        await Sales.create(data)
+        if (!data.Region || data.Region.trim() === "") {
+            return res.status(400).json({ message: "Region is required..." })
+        }
+
+        if (!data.Country || data.Country.trim() === "") {
+            return res.status(400).json({ message: "Country is required..." })
+        }
+
+        if (!data.ItemType || data.ItemType.trim() === "") {
+            return res.status(400).json({ message: "ItemType is required..." })
+        }
+
+        if (!data.SalesChannel || data.SalesChannel.trim() === "") {
+            return res.status(400).json({ message: "SalesChannel is required..." })
+        }
+
+        if (!data.OrderPriority || data.OrderPriority.trim() === "") {
+            return res.status(400).json({ message: "OrderPriority is required..." })
+        }
+
+        if (!data.OrderDate || data.OrderDate.trim() === "") {
+            return res.status(400).json({ message: "OrderDate is required..." })
+        }
+
+        if (!data.OrderId || data.OrderId.trim() === "") {
+            return res.status(400).json({ message: "OrderId is required..." })
+        }
+
+        if (!data.ShipDate || data.ShipDate.trim() === "") {
+            return res.status(400).json({ message: "ShipDate is required..." })
+        }
+
+        if (data.UnitsSold === null || data.UnitsSold === undefined || data.UnitsSold === "") {
+            return res.status(400).json({ message: "UnitsSold is required..." })
+        }
+
+        if (data.UnitPrice === null || data.UnitPrice === undefined || data.UnitPrice === "") {
+            return res.status(400).json({ message: "UnitPrice is required..." })
+        }
+
+        if (data.TotalRevenue === null || data.TotalRevenue === undefined || data.TotalRevenue === "") {
+            return res.status(400).json({ message: "TotalRevenue is required..." })
+        }
+
+        if (data.TotalCost === null || data.TotalCost === undefined || data.TotalCost === "") {
+            return res.status(400).json({ message: "TotalCost is required..." })
+        }
+
+        if (data.TotalProfit === null || data.TotalProfit === undefined || data.TotalProfit === "") {
+            return res.status(400).json({ message: "TotalProfit is required..." })
+        }
+
+        data.userId = req.userId;
+
+        const orderIdExists = await Sales.findOne({ OrderId: data.OrderId.trim() })
+        if (orderIdExists) {
+            return res.status(400).json({ message: "Record with this given OrderId already exists..." })
+        }
+
+        const newRecord = await Sales.create(data);
+
+        return res.status(201).json({ newRecord: newRecord, message: "Sales Record Created Successfully..." })
     }
     catch (error) {
+        console.log(error);
 
+        return res.status(500).json({ message: "Error while creating the new record..." })
     }
 }
 
