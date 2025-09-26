@@ -73,6 +73,11 @@ async function processCsv(file, batchSize = 2000) {
             console.log("Error deleting file:", err.message);
         }
     });
+
+    readable.on("error", async (err) => {
+        console.error("Stream error:", err.message);
+        await File.updateOne({ _id: file._id }, { status: "error" });
+    })
 }
 
 async function insertData() {
