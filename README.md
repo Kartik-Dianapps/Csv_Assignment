@@ -140,7 +140,7 @@ SALT_ROUNDS=10
 # How to Setup Locally
 
 1. Clone the repository:
-https://github.com/Kartik-Dianapps/Csv_Assignment_Multithreading.git
+https://github.com/Kartik-Dianapps/Csv_Assignment.git
 
 2. Navigate to the project folder:
 cd Csv_Assignment_Multithreading
